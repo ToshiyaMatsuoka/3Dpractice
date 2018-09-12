@@ -1,0 +1,2 @@
+HOGE_TEX,
+BOO_TEX,

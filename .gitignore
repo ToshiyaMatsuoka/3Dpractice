@@ -1,1 +1,5 @@
 3Dpractice/.vs/
+*.pdb
+*.log
+3Dpractice/3Dpractice/Debug/
+3Dpractice/Debug/
