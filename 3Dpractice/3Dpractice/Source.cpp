@@ -11,10 +11,12 @@ LPD3DXMESH pMesh = NULL;
 D3DMATERIAL9* pMeshMaterials = NULL;
 LPDIRECT3DTEXTURE9* pMeshTextures = NULL;
 DWORD dwNumMaterials = 0;
+float fCameraX = 0, fCameraY = 1.0f, fCameraZ = -3.0f,
+fCameraHeading = 0, fCameraPitch = 0;
 
 unsigned int GameRoop(void);
 void Render();
-
+void Control();
 
 INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdShow)
 {
@@ -104,7 +106,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 
 
 unsigned int GameRoop(void) {
-
+	Control();
 	Render();
 
 	CheckKeyState(DIK_ESCAPE);
@@ -120,8 +122,7 @@ unsigned int GameRoop(void) {
 }
 
 //Xファイルから読み込んだメッシュをレンダリングする関数
-void Render()
-{
+void Render(){
 	//ワールドトランスフォーム（絶対座標変換）
 	D3DXMATRIXA16 matWorld, matRotation;
 	D3DXMatrixRotationY(&matWorld, timeGetTime() / 3000.0f);
@@ -130,11 +131,17 @@ void Render()
 	g_pD3Device->SetTransform(D3DTS_WORLD, &matWorld);
 	// ビュートランスフォーム（視点座標変換）
 
-	D3DXVECTOR3 vecEyePt(0.0f, 1.0f, -3.0f); //カメラ（視点）位置
-	D3DXVECTOR3 vecLookatPt(0.0f, 0.0f, 0.0f);//注視位置
+	D3DXVECTOR3 vecEyePt(fCameraX, fCameraY, fCameraZ); //カメラ（視点）位置
+	D3DXVECTOR3 vecLookatPt(fCameraX, fCameraY - 1.0f, fCameraZ + 3.0f);//注視位置
 	D3DXVECTOR3 vecUpVec(0.0f, 1.0f, 0.0f);//上方位置
-	D3DXMATRIXA16 matView;
-	D3DXMatrixLookAtLH(&matView, &vecEyePt, &vecLookatPt, &vecUpVec);
+	D3DXMATRIXA16 matView, matCameraPosition, matHeading, matPitch;
+	D3DXMatrixIdentity(&matView);
+	D3DXMatrixRotationY(&matHeading, fCameraHeading);
+	D3DXMatrixRotationX(&matPitch, fCameraPitch);
+	D3DXMatrixLookAtLH(&matCameraPosition, &vecEyePt, &vecLookatPt, &vecUpVec);
+	D3DXMatrixMultiply(&matView, &matView, &matHeading);
+	D3DXMatrixMultiply(&matView, &matView, &matPitch);
+	D3DXMatrixMultiply(&matView, &matView, &matCameraPosition);
 	g_pD3Device->SetTransform(D3DTS_VIEW, &matView);
 	// プロジェクショントランスフォーム（射影変換）
 	D3DXMATRIXA16 matProj;
@@ -170,4 +177,25 @@ void Render()
 		g_pD3Device->EndScene();
 	}
 	g_pD3Device->Present(NULL, NULL, NULL, NULL);
+}
+
+void Control() {
+	if(InputKEY(DIK_A))	fCameraX -= 0.1f;
+	if(InputKEY(DIK_D))fCameraX += 0.1f;
+	if(InputKEY(DIK_Q))fCameraY -= 0.1f;
+	if(InputKEY(DIK_E))fCameraY += 0.1f;
+	if(InputKEY(DIK_W))fCameraZ -= 0.1f;
+	if(InputKEY(DIK_S))fCameraZ += 0.1f;
+	if(InputKEY(DIK_UP))fCameraHeading -= 0.1f;
+	if(InputKEY(DIK_DOWN))fCameraHeading += 0.1f;
+	if(InputKEY(DIK_LEFT))fCameraPitch -= 0.1f;
+	if(InputKEY(DIK_RIGHT))fCameraPitch += 0.1f;
+
+
+
+
+
+
+
+
 }
