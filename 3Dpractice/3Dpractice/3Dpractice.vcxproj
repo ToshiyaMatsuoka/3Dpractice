@@ -70,8 +70,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>.\DirectX_LIB\DirectX_LIB;$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
-    <LibraryPath>.\DirectX_LIB\Debug;$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>.\SoundLib\Debug_x86\Include;.\DirectX_LIB\DirectX_LIB;$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>.\SoundLib\Debug_x86\Lib;.\DirectX_LIB\Debug;$(DXSDK_DIR)Lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>.\DirectX_LIB\DirectX_LIB;$(DXSDK_DIR)Include;$(IncludePath)</IncludePath>
@@ -83,6 +83,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

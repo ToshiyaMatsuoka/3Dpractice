@@ -1,7 +1,8 @@
 #include "TrialLib.h"
 #include "TrialEnums.h"
-
+#include "SoundsManager.h"
 #pragma comment (lib,"DirectX_LIB.lib")
+#pragma comment (lib,"SoundLIB.lib")
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 
@@ -14,6 +15,9 @@ DWORD dwNumMaterials = 0;
 float fCameraX = 0, fCameraY = 1.0f, fCameraZ = -3.0f,
 fCameraHeading = 0, fCameraPitch = 0, fPosX = 0, fPosY = 0, fPosZ = 0;
 
+bool SoundSuccess;
+SoundLib::SoundsManager soundsManager;
+
 unsigned int GameRoop(void);
 void Render();
 void Control();
@@ -23,6 +27,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 	HWND hWnd = NULL;
 
 	InitWindowEx("3DTEST", &hWnd, 640, 540, hInst, hInstance, "Sprite.bmp");
+	SoundSuccess = soundsManager.Initialize();
 
 	
 		//// 「Direct3D」オブジェクトの作成
@@ -95,8 +100,9 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 		// スペキュラ（鏡面反射）を有効にする
 		g_pD3Device->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
 
-
-
+		soundsManager.AddFile("216.ブラックサレナⅢ（機動戦艦ナデシコ The prince of darkness）.mp3", "BGM");
+		soundsManager.Start("BGM", false);
+		soundsManager.AddFile("nc84131.wav", "SE");
 
 		FlameRoop(GameRoop);
 
