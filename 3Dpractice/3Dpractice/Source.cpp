@@ -12,7 +12,7 @@ D3DMATERIAL9* pMeshMaterials = NULL;
 LPDIRECT3DTEXTURE9* pMeshTextures = NULL;
 DWORD dwNumMaterials = 0;
 float fCameraX = 0, fCameraY = 1.0f, fCameraZ = -3.0f,
-fCameraHeading = 0, fCameraPitch = 0;
+fCameraHeading = 0, fCameraPitch = 0, fPosX = 0, fPosY = 0, fPosZ = 0;
 
 unsigned int GameRoop(void);
 void Render();
@@ -124,10 +124,12 @@ unsigned int GameRoop(void) {
 //Xファイルから読み込んだメッシュをレンダリングする関数
 void Render(){
 	//ワールドトランスフォーム（絶対座標変換）
-	D3DXMATRIXA16 matWorld, matRotation;
-	D3DXMatrixRotationY(&matWorld, timeGetTime() / 3000.0f);
-	D3DXMatrixRotationX(&matRotation, 0.5f);
-	D3DXMatrixMultiply(&matWorld, &matWorld, &matRotation);
+	D3DXMATRIXA16 matWorld, matPosition, matRotation;
+	D3DXMatrixIdentity(&matWorld);
+	D3DXMatrixTranslation(&matPosition, fPosX, fPosY, fPosZ);
+	//D3DXMatrixRotationY(&matWorld, timeGetTime() / 3000.0f);
+	//D3DXMatrixRotationX(&matRotation, 0.5f);
+	D3DXMatrixMultiply(&matWorld, &matWorld, &/*matRotation*/matPosition);
 	g_pD3Device->SetTransform(D3DTS_WORLD, &matWorld);
 	// ビュートランスフォーム（視点座標変換）
 
@@ -186,11 +188,17 @@ void Control() {
 	if(InputKEY(DIK_E))fCameraY += 0.1f;
 	if(InputKEY(DIK_W))fCameraZ -= 0.1f;
 	if(InputKEY(DIK_S))fCameraZ += 0.1f;
-	if(InputKEY(DIK_UP))fCameraHeading -= 0.1f;
-	if(InputKEY(DIK_DOWN))fCameraHeading += 0.1f;
-	if(InputKEY(DIK_LEFT))fCameraPitch -= 0.1f;
-	if(InputKEY(DIK_RIGHT))fCameraPitch += 0.1f;
+	if(InputKEY(DIK_LEFT))fCameraHeading -= 0.1f;
+	if(InputKEY(DIK_RIGHT))fCameraHeading += 0.1f;
+	if(InputKEY(DIK_UP))fCameraPitch -= 0.1f;
+	if(InputKEY(DIK_DOWN))fCameraPitch += 0.1f;
 
+	if (InputKEY(DIK_NUMPAD7))fPosZ -= 0.01f;
+	if (InputKEY(DIK_NUMPAD9))fPosZ += 0.01f;
+	if (InputKEY(DIK_NUMPAD2))fPosY -= 0.01f;
+	if (InputKEY(DIK_NUMPAD8))fPosY += 0.01f;
+	if (InputKEY(DIK_NUMPAD4))fPosX -= 0.01f;
+	if (InputKEY(DIK_NUMPAD6))fPosX += 0.01f;
 
 
 
