@@ -5,7 +5,12 @@
 #pragma comment (lib,"SoundLIB.lib")
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
-
+enum MESH {
+	CHIPS,
+	CAN,
+	BOTTLE,
+	MESHMAX
+};
 struct THING
 {
 	LPD3DXMESH pMesh;
@@ -27,10 +32,11 @@ extern LPDIRECT3DDEVICE9 g_pD3Device;
 //D3DMATERIAL9* pMeshMaterials = NULL;
 //LPDIRECT3DTEXTURE9* pMeshTextures = NULL;
 //DWORD dwNumMaterials = 0;
-THING Thing[4];
+THING Thing[MESHMAX];
 
 float fCameraX = 0, fCameraY = 1.0f, fCameraZ = -3.0f,
-fCameraHeading = 0, fCameraPitch = 0, fPosX = 0, fPosY = 0, fPosZ = 0;
+fCameraHeading = 0, fCameraPitch = 0, fPosX = 0, fPosY = 0, fPosZ = 0,
+LightX = 1, LightY = 1, LightZ = 1;
 
 bool SoundSuccess;
 SoundLib::SoundsManager soundsManager;
@@ -142,7 +148,7 @@ unsigned int GameRoop(void) {
 	if (KeyState[DIK_ESCAPE] == KeyRelease)
 	{
 		return WM_QUIT;
-		for (int i = 0; i<4; i++)
+		for (int i = 0; i<MESHMAX; i++)
 		{
 			SAFE_RELEASE(Thing[i].pMesh);
 		}
@@ -219,14 +225,27 @@ void Control(THING* pThing) {
 	if(InputKEY(DIK_UP))fCameraPitch -= 0.1f;
 	if(InputKEY(DIK_DOWN))fCameraPitch += 0.1f;
 
-	if (InputKEY(DIK_NUMPAD7))pThing->fPosZ -= 0.01f;
-	if (InputKEY(DIK_NUMPAD9))pThing->fPosZ += 0.01f;
+	if (InputKEY(DIK_J))LightX -= 0.1f;
+	if (InputKEY(DIK_L))LightX += 0.1f;
+	if (InputKEY(DIK_U))LightY -= 0.1f;
+	if (InputKEY(DIK_O))LightY += 0.1f;
+	if (InputKEY(DIK_I))LightZ -= 0.1f;
+	if (InputKEY(DIK_K))LightZ += 0.1f;
+	if (InputKEY(DIK_Y));
+	if (InputKEY(DIK_H));
+	if (InputKEY(DIK_N));
+	if (InputKEY(DIK_M));
+
+	if (InputKEY(DIK_SUBTRACT))pThing->fPosZ -= 0.01f;
+	if (InputKEY(DIK_ADD))pThing->fPosZ += 0.01f;
 	if (InputKEY(DIK_NUMPAD2))pThing->fPosY -= 0.01f;
 	if (InputKEY(DIK_NUMPAD8))pThing->fPosY += 0.01f;
 	if (InputKEY(DIK_NUMPAD4))pThing->fPosX -= 0.01f;
 	if (InputKEY(DIK_NUMPAD6))pThing->fPosX += 0.01f;
-	if (InputKEY(DIK_NUMPAD1))pThing->fHeading += 0.1f;
-	if (InputKEY(DIK_NUMPAD3))pThing->fPitch += 0.1f;
+	if (InputKEY(DIK_NUMPAD1))pThing->fHeading -= 0.1f;
+	if (InputKEY(DIK_NUMPAD3))pThing->fHeading += 0.1f;
+	if (InputKEY(DIK_NUMPAD7))pThing->fPitch -= 0.1f;
+	if (InputKEY(DIK_NUMPAD9))pThing->fPitch += 0.1f;
 
 }
 
@@ -274,7 +293,7 @@ void RenderThing(THING* pThing){
 	//ワールドトランスフォーム（絶対座標変換）
 	D3DXMATRIXA16 matWorld, matPosition, fHeading, fPitch;
 	D3DXMatrixIdentity(&matWorld);
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < MESHMAX; i++) {
 		D3DXMatrixTranslation(&matPosition, pThing->vecPosition.x + pThing->fPosX, pThing->vecPosition.y+ pThing->fPosY,
 			pThing->vecPosition.z+ pThing->fPosZ);
 		D3DXMatrixRotationY(&fHeading, pThing->fHeading);
@@ -304,7 +323,7 @@ void RenderThing(THING* pThing){
 	D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4, 1.0f, 1.0f, 100.0f);
 	g_pD3Device->SetTransform(D3DTS_PROJECTION, &matProj);
 	// ライトをあてる 白色で鏡面反射ありに設定
-	D3DXVECTOR3 vecDirection(1, 1, 1);
+	D3DXVECTOR3 vecDirection(LightX, LightY, LightZ);
 	D3DLIGHT9 light;
 	ZeroMemory(&light, sizeof(D3DLIGHT9));
 	light.Type = D3DLIGHT_DIRECTIONAL;
@@ -314,8 +333,9 @@ void RenderThing(THING* pThing){
 	light.Specular.r = 1.0f;
 	light.Specular.g = 1.0f;
 	light.Specular.b = 1.0f;
+
 	D3DXVec3Normalize((D3DXVECTOR3*)&light.Direction, &vecDirection);
-	light.Range = 200.0f;
+	light.Range = 2000.0f;
 	g_pD3Device->SetLight(0, &light);
 	g_pD3Device->LightEnable(0, TRUE);
 	// レンダリング	 
