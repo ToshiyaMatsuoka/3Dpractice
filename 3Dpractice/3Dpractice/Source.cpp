@@ -1,9 +1,9 @@
 #include "TrialLib.h"
-#include "TrialEnums.h"
 #include "SoundsManager.h"
 #pragma comment (lib,"DirectX_LIB.lib")
 #pragma comment (lib,"SoundLIB.lib")
 
+#define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 enum MESH {
 	CHIPS,
@@ -54,7 +54,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 	InitWindowEx("3DTEST", &hWnd, 640, 540, hInst, hInstance, "Sprite.bmp");
 	SoundSuccess = soundsManager.Initialize();
 
-	
+
 		//// 「Direct3D」オブジェクトの作成
 		//if (NULL == (g_pDirect3D = Direct3DCreate9(D3D_SDK_VERSION)))
 		//{
@@ -63,6 +63,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 		//}
 		// 「DIRECT3Dデバイス」オブジェクトの作成
 		D3DPRESENT_PARAMETERS d3dpp;
+		g_pDirect3D->GetAdapterDisplayMode(
+			D3DADAPTER_DEFAULT,
+			&g_D3DdisplayMode);
+
 		ZeroMemory(&d3dpp, sizeof(d3dpp));
 		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
 		d3dpp.BackBufferCount = 1;
@@ -70,7 +74,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 		d3dpp.Windowed = TRUE;
 		d3dpp.EnableAutoDepthStencil = TRUE;
 		d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-
 		if (FAILED(g_pDirect3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd,
 			D3DCREATE_MIXED_VERTEXPROCESSING,
 			&d3dpp, &g_pD3Device)))
@@ -84,50 +87,44 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hInstance, LPSTR szStr, INT iCmdSh
 				return E_FAIL;
 			}
 		}
+		g_pTexture["test"] = NULL;
+		//「テクスチャオブジェクト」の作成
+		if (FAILED(D3DXCreateTextureFromFileEx(g_pD3Device, "Sprite.bmp", 100, 100, 0, 0, D3DFMT_UNKNOWN,
+			D3DPOOL_DEFAULT, D3DX_FILTER_NONE, D3DX_DEFAULT,
+			0xff000000, NULL, NULL, &g_pTexture["test"])))
+		{
+			MessageBox(0, "テクスチャの作成に失敗しました", "", MB_OK);
+			g_pTexture.erase("test");
+			return E_FAIL;
+		}
+		g_pTexture.erase("test");
 
-		//// Xファイルからメッシュをロードする	
-		//LPD3DXBUFFER pD3DXMtrlBuffer = NULL;
 
-		//if (FAILED(D3DXLoadMeshFromX("Chips.x", D3DXMESH_SYSTEMMEM,
-		//	g_pD3Device, NULL, &pD3DXMtrlBuffer, NULL,
-		//	&dwNumMaterials, &pMesh)))
-		//{
-		//	MessageBox(NULL, "Xファイルの読み込みに失敗しました", NULL, MB_OK);
-		//	return E_FAIL;
-		//}
-		//D3DXMATERIAL* d3dxMaterials = (D3DXMATERIAL*)pD3DXMtrlBuffer->GetBufferPointer();
-		//pMeshMaterials = new D3DMATERIAL9[dwNumMaterials];
-		//pMeshTextures = new LPDIRECT3DTEXTURE9[dwNumMaterials];
-
-		//for (DWORD i = 0; i < dwNumMaterials; i++)
-		//{
-		//	pMeshMaterials[i] = d3dxMaterials[i].MatD3D;
-		//	pMeshMaterials[i].Ambient = pMeshMaterials[i].Diffuse;
-		//	pMeshTextures[i] = NULL;
-		//	if (d3dxMaterials[i].pTextureFilename != NULL &&
-		//		lstrlen(d3dxMaterials[i].pTextureFilename) > 0)
-		//	{
-		//		if (FAILED(D3DXCreateTextureFromFile(g_pD3Device,
-		//			d3dxMaterials[i].pTextureFilename,
-		//			&pMeshTextures[i])))
-		//		{
-		//			MessageBox(NULL, "テクスチャの読み込みに失敗しました", NULL, MB_OK);
-		//		}
-		//	}
-		//}
-		//pD3DXMtrlBuffer->Release();
 		InitThing(&Thing[0], "Chips.x", &D3DXVECTOR3(0, -1, 0));
 		InitThing(&Thing[1], "Can.x", &D3DXVECTOR3(0, 0, 0));
 		InitThing(&Thing[2], "Bottle.x", &D3DXVECTOR3(1, 0, 1));
 
+		g_pD3Device->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+		g_pD3Device->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);  //SRCの設定
+		g_pD3Device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
+		g_pD3Device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+		g_pD3Device->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+
+
+		g_pD3Device->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
 		// Zバッファー処理を有効にする
-		g_pD3Device->SetRenderState(D3DRS_ZENABLE, TRUE);
+		g_pD3Device->SetRenderState(D3DRS_ZENABLE, true);
 		// ライトを有効にする
-		g_pD3Device->SetRenderState(D3DRS_LIGHTING, TRUE);
+		g_pD3Device->SetRenderState(D3DRS_LIGHTING, true);
 		// アンビエントライト（環境光）を設定する
-		g_pD3Device->SetRenderState(D3DRS_AMBIENT, 0x00111111);
+		g_pD3Device->SetRenderState(D3DRS_AMBIENT, 0x00000000);
 		// スペキュラ（鏡面反射）を有効にする
-		g_pD3Device->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
+		g_pD3Device->SetRenderState(D3DRS_SPECULARENABLE, true);
+
+		SetUpFont(50, 100, "Test", "メイリオ");
+		ReadInTexture("BlackSarena.png", "TEST");
 
 		soundsManager.AddFile("216.ブラックサレナⅢ（機動戦艦ナデシコ The prince of darkness）.mp3", "BGM");
 		soundsManager.AddFile("nc84131.wav", "SE");
@@ -161,54 +158,26 @@ unsigned int GameRoop(void) {
 
 //Xファイルから読み込んだメッシュをレンダリングする関数
 void Render() {
-	////ワールドトランスフォーム（絶対座標変換）
-	//D3DXMATRIXA16 matWorld, matPosition, matRotation;
-	//D3DXMatrixIdentity(&matWorld);
-	////D3DXMatrixTranslation(&matPosition, fPosX, fPosY, fPosZ);
-	//D3DXMatrixRotationY(&matWorld, timeGetTime() / 3000.0f);
-	//D3DXMatrixRotationX(&matRotation, 0.5f);
-	//D3DXMatrixMultiply(&matWorld, &matWorld, &/*matRotation*/matPosition);
-	//g_pD3Device->SetTransform(D3DTS_WORLD, &matWorld);
-	// ビュートランスフォーム（視点座標変換）
-	//D3DXVECTOR3 vecEyePt(fCameraX, fCameraY, fCameraZ); //カメラ（視点）位置
-	//D3DXVECTOR3 vecLookatPt(fCameraX, fCameraY - 1.0f, fCameraZ + 3.0f);//注視位置
-	//D3DXVECTOR3 vecUpVec(0.0f, 1.0f, 0.0f);//上方位置
-	//D3DXMATRIXA16 matView, matCameraPosition, matHeading, matPitch;
-	//D3DXMatrixIdentity(&matView);
-	//D3DXMatrixRotationY(&matHeading, fCameraHeading);
-	//D3DXMatrixRotationX(&matPitch, fCameraPitch);
-	//D3DXMatrixLookAtLH(&matCameraPosition, &vecEyePt, &vecLookatPt, &vecUpVec);
-	//D3DXMatrixMultiply(&matView, &matView, &matHeading);
-	//D3DXMatrixMultiply(&matView, &matView, &matPitch);
-	//D3DXMatrixMultiply(&matView, &matView, &matCameraPosition);
-	//g_pD3Device->SetTransform(D3DTS_VIEW, &matView);
-	//// プロジェクショントランスフォーム（射影変換）
-	//D3DXMATRIXA16 matProj;
-	//D3DXMatrixPerspectiveFovLH(&matProj, D3DX_PI / 4, 1.0f, 1.0f, 100.0f);
-	//g_pD3Device->SetTransform(D3DTS_PROJECTION, &matProj);
-	//// ライトをあてる 白色で鏡面反射ありに設定
-	//D3DXVECTOR3 vecDirection(0, 0, 1);
-	//D3DLIGHT9 light;
-	//ZeroMemory(&light, sizeof(D3DLIGHT9));
-	//light.Type = D3DLIGHT_DIRECTIONAL;
-	//light.Diffuse.r = 1.0f;
-	//light.Diffuse.g = 1.0f;
-	//light.Diffuse.b = 1.0f;
-	//light.Specular.r = 1.0f;
-	//light.Specular.g = 1.0f;
-	//light.Specular.b = 1.0f;
-	//D3DXVec3Normalize((D3DXVECTOR3*)&light.Direction, &vecDirection);
-	//light.Range = 200.0f;
-	//g_pD3Device->SetLight(0, &light);
-	//g_pD3Device->LightEnable(0, TRUE);
-	// レンダリング
 	g_pD3Device->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
 		D3DCOLOR_XRGB(100, 100, 100), 1.0f, 0);
 	g_pD3Device->BeginScene();
+
 	for (int i = 0; i < 4; i++)
 	{
 		RenderThing(&Thing[i]);
 	}
+	//頂点に入れるデータを設定
+	g_pD3Device->SetFVF(D3DFVF_CUSTOMVERTEX);
+
+	CUSTOMVERTEX test[4];
+	CENTRAL_STATE testCentral = { 100,100,100,100, };
+
+	CreateSquareVertex(test, testCentral);
+	RECT hoge = { 0,0,1000,100 };
+	WriteWord("TEST", hoge, "Test");
+	SetUpTexture(test, "TEST");
+	//EasyCreateSquareVertex(-0.5, -0.5, 0.5, 0.5, "TEST");
+
 	EndSetTexture();
 
 }
@@ -337,7 +306,24 @@ void RenderThing(THING* pThing){
 	D3DXVec3Normalize((D3DXVECTOR3*)&light.Direction, &vecDirection);
 	light.Range = 2000.0f;
 	g_pD3Device->SetLight(0, &light);
-	g_pD3Device->LightEnable(0, TRUE);
+	g_pD3Device->LightEnable(0, true);
+
+	D3DXVECTOR3 vecDirection1(-LightX,- LightY, -LightZ);
+	D3DLIGHT9 light1;
+	ZeroMemory(&light1, sizeof(D3DLIGHT9));
+	light1.Type = D3DLIGHT_DIRECTIONAL;
+	light1.Diffuse.r = 1.0f;
+	light1.Diffuse.g = 1.0f;
+	light1.Diffuse.b = 1.0f;
+	light1.Specular.r = 1.0f;
+	light1.Specular.g = 1.0f;
+	light1.Specular.b = 1.0f;
+
+	D3DXVec3Normalize((D3DXVECTOR3*)&light1.Direction, &vecDirection1);
+	light1.Range = 2000.0f;
+	g_pD3Device->SetLight(1, &light1);
+	g_pD3Device->LightEnable(1, true);
+
 	// レンダリング	 
 	for (DWORD i = 0; i<pThing->dwNumMaterials; i++)
 	{

@@ -17,8 +17,9 @@
 #include <time.h>
 #include <stdio.h>
 #include<Xinput.h>
+#include "map"
 
-#include "TrialEnums.h"
+
 
 #pragma comment(lib, "winmm.lib")
 #pragma comment(lib, "d3d9.lib")
@@ -119,13 +120,13 @@ struct CIRCLE_STATE{
 };
 
 extern LPDIRECT3D9 g_pDirect3D;		//	Direct3Dのインターフェイス
-extern LPDIRECT3DTEXTURE9	  g_pTexture[TEXMAX];	//	画像の情報を入れておく為のポインタ配列
+extern std::map<std::string, LPDIRECT3DTEXTURE9>	g_pTexture;	//	画像の情報を入れておく為のポインタ配列
 extern IDirect3DDevice9*	  g_pD3Device;		//	Direct3Dのデバイス
 extern D3DDISPLAYMODE		  g_D3DdisplayMode;
 extern D3DPRESENT_PARAMETERS g_D3dPresentParameters;
 extern LPDIRECTINPUT8 g_pDinput;
 extern LPDIRECTINPUTDEVICE8 g_pKeyDevice;
-extern LPD3DXFONT g_pFont[FONTMAX];
+extern std::map<std::string, LPD3DXFONT> g_pFont;
 extern PADSTATE PadState[ButtomIndexMAX];
 extern PADSTATE PadOldState[ButtomIndexMAX];
 extern BYTE KeyState[256];
@@ -244,18 +245,20 @@ void EndSetTexture();
 /**
 * @brief 画像読み込み
 * @param pTextureName 読み込む画像ファイル名
-* @param TexNum 画像の格納先配列番号
+* @param TexKey 画像の格納キー
 */
-void ReadInTexture(LPCSTR pTextureName, int TexNum);
+void ReadInTexture(LPCSTR pTextureName, std::string TexKey);
 
 
 /**
 * @brief 画像表示
 * @param Vertex 描画する4頂点情報
-* @param TexNum 画像の格納配列番号
+* @param TexKey 画像の格納キー
 * @detail CUSTOMVERTEX変数は自分で用意すること
 */
-void SetUpTexture(CUSTOMVERTEX* Vertex, int TexNum);
+void SetUpTexture(CUSTOMVERTEX* Vertex, std::string TexKey);
+
+void eraseTexture(std::string TexKey);
 
 //2頂点設定描画
 
@@ -266,9 +269,9 @@ void SetUpTexture(CUSTOMVERTEX* Vertex, int TexNum);
 * @param Right 右端
 * @param Bottom 下端
 * @param color 色
-* @param TexNum 画像の格納配列番号
+* @param TexKey 画像の格納キー
 */
-void EasyCreateSquareVertexColor(float Left, float Top, float Right, float Bottom, int TexNum, DWORD color=0xffffffff);
+void EasyCreateSquareVertexColor(float Left, float Top, float Right, float Bottom, std::string TexKey, DWORD color=0xffffffff);
 
 /**
 * @brief 2頂点を指定し画像を描画する
@@ -281,9 +284,9 @@ void EasyCreateSquareVertexColor(float Left, float Top, float Right, float Botto
 * @param tv 画像切り取り上端
 * @param scaleTu 画像の切り取り幅
 * @param scaleTv 画像の切り取り高さ
-* @param TexNum 画像の格納配列番号
+* @param TexKey 画像の格納キー
 */
-void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, int TexNum, DWORD  color = 0xffffffff, float tu=0, float tv=0, float scaleTu=1, float scaleTv=1);
+void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, std::string TexKey, DWORD  color = 0xffffffff, float tu=0, float tv=0, float scaleTu=1, float scaleTv=1);
 
 //RECT引数2頂点設定描画
 
@@ -291,9 +294,9 @@ void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, i
 * @brief 2頂点を指定し画像を描画する
 * @param Vertex RECT構造体で頂点を指定する
 * @param color 色
-* @param TexNum 画像の格納配列番号
+* @param TexKey 画像の格納キー
 */
-void EasyCreateRECTVertexColor(RECT Vertex, int TexNum, DWORD color);
+void EasyCreateRECTVertexColor(RECT Vertex, std::string TexKey, DWORD color);
 /**
 * @brief 2頂点を指定し画像を描画する
 * @param Vertex RECT構造体で頂点を指定する
@@ -302,9 +305,9 @@ void EasyCreateRECTVertexColor(RECT Vertex, int TexNum, DWORD color);
 * @param tv 画像切り取り上端
 * @param scaleTu 画像の切り取り幅
 * @param scaleTv 画像の切り取り高さ
-* @param TexNum 画像の格納配列番号
+* @param TexKey 画像の格納キー
 */
-void EasyCreateRECTVertex(RECT Vertex, int TexNum, DWORD color, float tu=0, float tv=0, float scaleTu=1, float scaleTv=1);
+void EasyCreateRECTVertex(RECT Vertex, std::string TexKey, DWORD color, float tu=0, float tv=0, float scaleTu=1, float scaleTv=1);
 
 //4頂点設定
 
@@ -338,17 +341,18 @@ void CreateSquareVertexColor(CUSTOMVERTEX* Vertex, CENTRAL_STATE Central, DWORD 
 * @param FontNum 表示文字設定の格納先配列番号
 * @param CharSet キャラセット（英字ならDEFAULT_CHARSET，シフトJISならSHIFTJIS_CHARSET）
 */
-void SetUpFont(int WordHeight, int WordWidth, int FontNum, LPCSTR FontName, int CharSet=DEFAULT_CHARSET);
+void SetUpFont(int WordHeight, int WordWidth, std::string FontNum, LPCSTR FontName, int CharSet=DEFAULT_CHARSET);
 /**
 * @brief DXフォント描画設定
 * @param Texts 表示内容
 * @param Vertex 表示範囲
-* @param FontNum 表示文字設定の格納配列番号
+* @param FontNum 表示文字設定の格納キー
 * @param TextFormat フォーマット
 * @param color 色
 */
-void WriteWord(LPCSTR Texts, RECT Vertex, int FontNum, int TextFormat=DT_LEFT, int color=0xff000000);
+void WriteWord(LPCSTR Texts, RECT Vertex, std::string FontNum, int TextFormat=DT_LEFT, int color=0xff000000);
 
+void eraseFont(std::string FontKey);
 
 /**
 * @brief 回転、円運動関数

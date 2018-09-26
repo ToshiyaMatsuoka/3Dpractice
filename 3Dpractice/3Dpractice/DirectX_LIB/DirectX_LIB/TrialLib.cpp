@@ -1,20 +1,19 @@
 #include "TrialLib.h"
-
 #pragma comment(lib, "DirectX_LIB.lib")
 
-
+using namespace std;
 
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
 #define D3DFVF_CUSTOMVERTEX (D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1)
 
 LPDIRECT3D9 g_pDirect3D;		//	Direct3Dのインターフェイス
-LPDIRECT3DTEXTURE9	  g_pTexture[TEXMAX];	//	画像の情報を入れておく為のポインタ配列
+map<string,LPDIRECT3DTEXTURE9>	g_pTexture;	//	画像の情報を入れておく為のポインタ配列
 IDirect3DDevice9*	  g_pD3Device = NULL;		//	Direct3Dのデバイス
 D3DDISPLAYMODE		  g_D3DdisplayMode;
 D3DPRESENT_PARAMETERS g_D3dPresentParameters;
 LPDIRECTINPUT8 g_pDinput = NULL;
 LPDIRECTINPUTDEVICE8 g_pKeyDevice = NULL;
-LPD3DXFONT g_pFont[FONTMAX];
+map<string,LPD3DXFONT> g_pFont;
 
 XINPUT_STATE g_Xinput;
 PADSTATE PadState[ButtomIndexMAX];
@@ -29,16 +28,9 @@ void FreeDx()
 	SAFE_RELEASE(g_pDirect3D);
 	SAFE_RELEASE(g_pDinput);
 
-	for (int i = 0; i < TEXMAX; i++)
-	{
-		SAFE_RELEASE(g_pTexture[i]);
-	}
-	for (int i = 0; i < FONTMAX; i++)
-	{
-		SAFE_RELEASE(g_pFont[i]);
-	}
-
-
+  	g_pTexture.clear();
+	g_pFont.clear();
+	
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -83,14 +75,18 @@ HRESULT InitD3d(HWND hWnd, LPCSTR pSrcFile)
 			return E_FAIL;
 		}
 	}
+	g_pTexture["test"] = NULL;
 	//「テクスチャオブジェクト」の作成
 	if (FAILED(D3DXCreateTextureFromFileEx(g_pD3Device, pSrcFile, 100, 100, 0, 0, D3DFMT_UNKNOWN,
 		D3DPOOL_DEFAULT, D3DX_FILTER_NONE, D3DX_DEFAULT,
-		0xff000000, NULL, NULL, &g_pTexture[TEXMAX])))
+		0xff000000, NULL, NULL, &g_pTexture["test"])))
 	{
 		MessageBox(0, "テクスチャの作成に失敗しました", "", MB_OK);
+		g_pTexture.erase("test");
 		return E_FAIL;
 	}
+	g_pTexture.erase("test");
+
 	return S_OK;
 }
 HRESULT InitD3dFullscreen(HWND hWnd, LPCSTR pSrcFile, int ResolutionWidth, int ResolutionHeight)
@@ -127,14 +123,17 @@ HRESULT InitD3dFullscreen(HWND hWnd, LPCSTR pSrcFile, int ResolutionWidth, int R
 			return E_FAIL;
 		}
 	}
+	g_pTexture["test"] = NULL;
 	//「テクスチャオブジェクト」の作成
 	if (FAILED(D3DXCreateTextureFromFileEx(g_pD3Device, pSrcFile, 100, 100, 0, 0, D3DFMT_UNKNOWN,
 		D3DPOOL_DEFAULT, D3DX_FILTER_NONE, D3DX_DEFAULT,
-		0xff000000, NULL, NULL, &g_pTexture[TEXMAX])))
+		0xff000000, NULL, NULL, &g_pTexture["test"])))
 	{
 		MessageBox(0, "テクスチャの作成に失敗しました", "", MB_OK);
+		g_pTexture.erase("test");
 		return E_FAIL;
 	}
+	g_pTexture.erase("test");
 	return S_OK;
 }
 
@@ -485,21 +484,26 @@ void EndSetTexture() {
 }
 
 //画像読み込み
-void ReadInTexture(LPCSTR pTextureName, int TexNum) {
+void ReadInTexture(LPCSTR pTextureName, string TexKey) {
+	g_pTexture[TexKey] = NULL;
 	D3DXCreateTextureFromFile(
 		g_pD3Device,
 		pTextureName,
-		&g_pTexture[TexNum]);
+		&g_pTexture[TexKey]);
 }
 //画像表示
-void SetUpTexture(CUSTOMVERTEX* Vertex, int TexNum) {
-	g_pD3Device->SetTexture(0, g_pTexture[TexNum]);
+void SetUpTexture(CUSTOMVERTEX* Vertex, string TexKey) {
+	g_pD3Device->SetTexture(0, g_pTexture[TexKey]);
 	g_pD3Device->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, Vertex, sizeof(CUSTOMVERTEX));
 }
 
+void eraseTexture(string TexKey) {
+	g_pTexture.erase(TexKey);
+}
 //DXフォント
 //文字設定
-void SetUpFont(int WordHeight,int WordWidth, int FontNum,LPCSTR FontName,int CharSet) {
+void SetUpFont(int WordHeight,int WordWidth, string FontKey,LPCSTR FontName,int CharSet) {
+	g_pFont[FontKey] = NULL;
 	D3DXCreateFont(
 		g_pD3Device,
 		WordHeight,
@@ -512,11 +516,11 @@ void SetUpFont(int WordHeight,int WordWidth, int FontNum,LPCSTR FontName,int Cha
 		DEFAULT_QUALITY,
 		FIXED_PITCH | FF_SCRIPT,
 		FontName,
-		&g_pFont[FontNum]);
+		&g_pFont[FontKey]);
 }
 //描画設定
-void WriteWord(LPCSTR Texts,RECT Vertex, int FontNum,int TextFormat,int color) {
-	g_pFont[FontNum]->DrawText(
+void WriteWord(LPCSTR Texts,RECT Vertex, string FontKey,int TextFormat,int color) {
+	g_pFont[FontKey]->DrawText(
 		NULL,							
 		Texts,					// 描画テキスト
 		-1,								// 全て表示
@@ -525,10 +529,13 @@ void WriteWord(LPCSTR Texts,RECT Vertex, int FontNum,int TextFormat,int color) {
 		color
 	);
 }
+void eraseFont(string FontKey) {
+	g_pFont.erase(FontKey);
+}
 
 
 //2点設定描画
-void EasyCreateSquareVertexColor( float Left, float Top, float Right, float Bottom, int TexNum, DWORD color) {
+void EasyCreateSquareVertexColor( float Left, float Top, float Right, float Bottom, string TexKey, DWORD color) {
 	CUSTOMVERTEX Vertex[4];
 
 	Vertex[0] = { Left,  Top,    1.f, 1.f, color, 0, 0 };
@@ -536,10 +543,10 @@ void EasyCreateSquareVertexColor( float Left, float Top, float Right, float Bott
 	Vertex[2] = { Right, Bottom, 1.f, 1.f, color, 1, 1 };
 	Vertex[3] = { Left,  Bottom, 1.f, 1.f, color, 0, 1 };
 
-	SetUpTexture(Vertex, TexNum);
+	SetUpTexture(Vertex, TexKey);
 
 }
-void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, int TexNum, DWORD color, float tu, float tv, float scaleTu, float scaleTv) {
+void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, string TexKey, DWORD color, float tu, float tv, float scaleTu, float scaleTv) {
 	CUSTOMVERTEX Vertex[4];
 
 
@@ -548,11 +555,11 @@ void EasyCreateSquareVertex( float Left, float Top, float Right, float Bottom, i
 	Vertex[2] = {  Right, Bottom, 1.f, 1.f, color, tu + scaleTu, tv + scaleTv };
 	Vertex[3] = {  Left,  Bottom, 1.f, 1.f, color, tu, tv + scaleTv };
 
-	SetUpTexture(Vertex, TexNum);
+	SetUpTexture(Vertex, TexKey);
 }
 
 //RECT引数2頂点設定描画
-void EasyCreateRECTVertexColor(RECT Vertex, int TexNum, DWORD color) {
+void EasyCreateRECTVertexColor(RECT Vertex, string TexKey, DWORD color) {
 	CUSTOMVERTEX Vertex4[4];
 
 	Vertex4[0] = { (float)Vertex.left, (float)Vertex.top,    1.f, 1.f, color, 0, 0 };
@@ -560,10 +567,10 @@ void EasyCreateRECTVertexColor(RECT Vertex, int TexNum, DWORD color) {
 	Vertex4[2] = { (float)Vertex.right,(float)Vertex.bottom, 1.f, 1.f, color, 1, 1 };
 	Vertex4[3] = { (float)Vertex.left, (float)Vertex.bottom, 1.f, 1.f, color, 0, 1 };
 
-	SetUpTexture(Vertex4, TexNum);
+	SetUpTexture(Vertex4, TexKey);
 
 }
-void EasyCreateRECTVertex(RECT Vertex, int TexNum, DWORD color, float tu, float tv, float scaleTu, float scaleTv) {
+void EasyCreateRECTVertex(RECT Vertex, string TexKey, DWORD color, float tu, float tv, float scaleTu, float scaleTv) {
 	CUSTOMVERTEX Vertex4[4];
 	
 
@@ -572,7 +579,7 @@ void EasyCreateRECTVertex(RECT Vertex, int TexNum, DWORD color, float tu, float 
 	Vertex4[2] = { (float)Vertex.right, (float)Vertex.bottom, 1.f, 1.f, color, tu + scaleTu, tv + scaleTv };
 	Vertex4[3] = { (float)Vertex.left,  (float)Vertex.bottom, 1.f, 1.f, color, tu, tv + scaleTv };
 
-	SetUpTexture(Vertex4, TexNum);
+	SetUpTexture(Vertex4, TexKey);
 }
 
 //4頂点設定
